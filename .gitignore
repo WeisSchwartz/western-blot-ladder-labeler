@@ -1,0 +1,12 @@
+.venv/
+*.egg-info/
+build/
+dist/
+__pycache__/
+*.pyc
+.pytest_cache/
+*_labeled.png
+*_labeled.tif
+*_labeled.json
+.DS_Store
+Thumbs.db

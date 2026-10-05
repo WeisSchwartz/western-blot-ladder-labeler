@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blot Ladder Labeler</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+<header class="topbar">
+  <h1>Blot Ladder Labeler</h1>
+  <span class="sub">Label the protein standard with kDa values</span>
+</header>
+
+<div class="layout">
+  <aside class="panel">
+    <section>
+      <h2>1 · Images</h2>
+      <label class="drop" id="drop-blot">
+        <input type="file" id="file-blot" accept="image/*,.tif,.tiff">
+        <span class="drop-title">Blot image</span>
+        <span class="drop-name" id="name-blot">Drop or click to choose</span>
+      </label>
+      <label class="drop optional" id="drop-marker">
+        <input type="file" id="file-marker" accept="image/*,.tif,.tiff">
+        <span class="drop-title">Marker image <em>(optional)</em></span>
+        <span class="drop-name" id="name-marker">Separate colorimetric / white-light image</span>
+      </label>
+      <button class="link" id="clear-marker" hidden>Remove marker image</button>
+    </section>
+
+    <section>
+      <h2>2 · Detect</h2>
+      <label class="field">Ladder
+        <select id="ladder"></select>
+      </label>
+      <div class="grid2">
+        <label class="field">Bands are
+          <select id="polarity">
+            <option value="auto">Auto-detect</option>
+            <option value="dark">Dark on light</option>
+            <option value="light">Light on dark</option>
+          </select>
+        </label>
+        <label class="field">Ladder lanes
+          <select id="n-ladders">
+            <option value="auto">Auto (all)</option>
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+          </select>
+        </label>
+      </div>
+      <button class="primary" id="btn-detect" disabled>Detect ladders</button>
+      <div class="limits-row">
+        <span class="muted" id="limits-text">Detection limits: whole image</span>
+        <button class="link" id="btn-reset-limits" hidden>Reset</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="row-head">
+        <h2>3 · Ladders &amp; bands</h2>
+        <span class="muted" id="band-count"></span>
+      </div>
+      <div class="lane-chips" id="lane-chips"></div>
+      <div class="btn-row">
+        <button id="btn-shift-up" title="Move every label in this ladder one band toward higher MW">Labels ↑</button>
+        <button id="btn-shift-down" title="Move every label in this ladder one band toward lower MW">Labels ↓</button>
+        <button id="btn-assign" title="Re-run kDa assignment on this ladder's current band positions">Auto-assign</button>
+      </div>
+      <table class="bands" id="band-table">
+        <thead><tr><th>y (px)</th><th>kDa</th><th title="Include in output">Show</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <button class="link danger" id="btn-delete-lane" hidden>Delete this ladder</button>
+      <details class="hint">
+        <summary>Editing tips</summary>
+        <ul>
+          <li>Drag a <b>band</b> to move it. Arrow keys nudge the selected band.</li>
+          <li><b>Shift-click</b> in the lane to add a band, or click a dashed <b>ghost</b>.</li>
+          <li><b>Double-click</b> a band (or press Delete) to remove it.</li>
+          <li>Drag a <b>lane</b> sideways, or drag its <b>left/right edges</b>, to re-detect.</li>
+          <li>Drag the <b>top/bottom limit lines</b> to exclude membrane edges.</li>
+        </ul>
+      </details>
+    </section>
+
+    <section>
+      <div class="row-head">
+        <h2>4 · Align &amp; crop</h2>
+        <button class="link" id="btn-reset-geom" hidden>Reset rotation</button>
+      </div>
+      <label class="field">Rotate (°, + = clockwise)
+        <div class="slider-row">
+          <input type="range" id="geom-angle-range" min="-15" max="15" step="0.1" value="0">
+          <input type="number" id="geom-angle" min="-45" max="45" step="0.1" value="0">
+        </div>
+      </label>
+      <button id="btn-straighten" class="full">Auto-straighten</button>
+      <p class="hint">Rotation turns the whole image, which resamples the pixels. Mention it in your figure legend if required. Lanes, bands and lane labels move with the image.</p>
+      <div class="row-head">
+        <span class="subhead">Crop</span>
+        <button class="link" id="btn-reset-crop">Reset crop</button>
+      </div>
+      <div class="grid4">
+        <label class="field">x<input type="number" id="crop-x" min="0"></label>
+        <label class="field">y<input type="number" id="crop-y" min="0"></label>
+        <label class="field">width<input type="number" id="crop-w" min="1"></label>
+        <label class="field">height<input type="number" id="crop-h" min="1"></label>
+      </div>
+      <p class="hint">In the <b>Align &amp; crop</b> tab, drag a box. You can crop the ladder lane out and keep its labels.</p>
+    </section>
+
+    <section id="merge-section" hidden>
+      <h2>5 · Merge marker into blot</h2>
+      <label class="check"><input type="checkbox" id="merge-on"> Show the ladder from the marker image in the output</label>
+      <div class="grid2">
+        <label class="field">Blend
+          <select id="merge-mode">
+            <option value="auto">Auto</option>
+            <option value="multiply">Multiply (light background)</option>
+            <option value="screen">Screen (dark / fluorescent)</option>
+            <option value="normal">Normal (paint over)</option>
+          </select>
+        </label>
+        <label class="field">Ladder color
+          <div class="slider-row">
+            <select id="merge-color-mode">
+              <option value="marker">Marker's colors</option>
+              <option value="custom">Custom</option>
+            </select>
+            <input type="color" id="merge-color" value="#2b50d6" hidden>
+          </div>
+        </label>
+      </div>
+      <label class="field">Opacity
+        <div class="slider-row">
+          <input type="range" id="merge-opacity" min="0" max="100" step="1" value="100">
+          <span class="muted" id="merge-opacity-text">100%</span>
+        </div>
+      </label>
+      <label class="check"><input type="checkbox" id="merge-lanes-only" checked> Only in the ladder lanes</label>
+      <p class="hint">Pick the <b>Merged</b> view to check the result. Auto uses Multiply on light backgrounds and Screen on dark or fluorescent ones.</p>
+    </section>
+
+    <section>
+      <div class="row-head">
+        <h2><span class="secnum" id="lanes-secnum">6</span> · Lane labels</h2>
+        <span class="muted" id="lane-label-count"></span>
+      </div>
+      <div class="btn-row">
+        <button id="btn-find-lanes" title="Detect every lane on the blot">Find lanes</button>
+        <button id="btn-clear-lanes">Clear</button>
+      </div>
+      <div class="checks inline">
+        <label><input type="checkbox" id="ll-numbers" checked> Numbers</label>
+        <label><input type="checkbox" id="ll-names" checked> Names</label>
+      </div>
+      <div class="grid2">
+        <label class="field">Name orientation
+          <select id="ll-angle">
+            <option value="0">Horizontal</option>
+            <option value="45" selected>Angled 45°</option>
+            <option value="90">Vertical</option>
+          </select>
+        </label>
+        <label class="field">Position
+          <select id="ll-position">
+            <option value="top">Above blot</option>
+            <option value="bottom">Below blot</option>
+          </select>
+        </label>
+      </div>
+      <table class="bands lanes" id="lane-table">
+        <thead><tr><th>#</th><th>Name</th><th title="Include in numbering">No.</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <details class="hint" id="paste-names">
+        <summary>Paste sample names</summary>
+        <textarea id="names-text" rows="5" placeholder="One name per line (or comma-separated). Filled into the numbered lanes, left to right."></textarea>
+        <button id="btn-apply-names">Apply names</button>
+      </details>
+      <p class="hint">In the <b>Lanes</b> tab, drag a lane marker to move it, <b>Shift-click</b> to add one, and <b>double-click</b> to delete one.</p>
+    </section>
+
+    <section>
+      <h2><span class="secnum" id="output-secnum">7</span> · Output</h2>
+      <div class="grid2">
+        <label class="field">Left labels from
+          <select id="side-left"></select>
+        </label>
+        <label class="field">Right labels from
+          <select id="side-right"></select>
+        </label>
+        <label class="field">Font size (px)
+          <input type="number" id="opt-font" min="6" max="400" placeholder="auto">
+        </label>
+        <label class="field">Format
+          <select id="opt-format">
+            <option value="png">PNG</option>
+            <option value="tiff">TIFF</option>
+          </select>
+        </label>
+      </div>
+      <div class="checks inline">
+        <label><input type="checkbox" id="opt-header" checked> “kDa” header</label>
+        <label><input type="checkbox" id="opt-ticks" checked> Ticks</label>
+        <label><input type="checkbox" id="opt-json"> JSON sidecar</label>
+      </div>
+      <button class="primary" id="btn-download" disabled>Download labeled image</button>
+    </section>
+  </aside>
+
+  <main class="stage">
+    <div class="toolbar">
+      <div class="seg" id="tabs">
+        <button data-tab="detect" class="on">Detect</button>
+        <button data-tab="crop">Align &amp; crop</button>
+        <button data-tab="lanes">Lanes</button>
+        <button data-tab="preview">Preview</button>
+      </div>
+      <div class="seg" id="views">
+        <button data-view="blot" class="on">Blot</button>
+        <button data-view="marker" disabled>Marker</button>
+        <button data-view="merged" disabled>Merged</button>
+      </div>
+      <div class="seg" id="zoom">
+        <button data-zoom="fit">Fit</button>
+        <button data-zoom="1">1:1</button>
+        <button data-zoom="out" aria-label="Zoom out">−</button>
+        <button data-zoom="in" aria-label="Zoom in">+</button>
+      </div>
+      <button id="btn-add-lane" disabled title="Then click on the image where the ladder is">+ Add ladder lane</button>
+      <span class="status" id="status"></span>
+    </div>
+    <div id="messages"></div>
+    <div class="viewport" id="viewport">
+      <div class="empty" id="empty">
+        <p>Choose a blot image to begin.</p>
+        <p class="muted">PNG, JPEG, TIFF (8/16-bit). Everything runs locally.</p>
+      </div>
+      <canvas id="canvas" hidden></canvas>
+      <img id="preview" alt="Labeled output preview" hidden>
+    </div>
+  </main>
+</div>
+<script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

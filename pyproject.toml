@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blot-ladder"
+version = "0.1.0"
+description = "Label the protein standard ladder on western blot images with kDa values"
+requires-python = ">=3.9"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "Pillow>=10.1",
+    "tifffile>=2023.7",
+    "flask>=3.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+blot-ladder = "blot_ladder.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+blot_ladder = ["ladders.json", "web/templates/*.html", "web/static/*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]

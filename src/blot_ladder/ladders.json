@@ -1,0 +1,19 @@
+{
+  "default": "dual-color",
+  "ladders": [
+    {
+      "id": "dual-color",
+      "name": "Precision Plus Protein Dual Color (Bio-Rad 1610374)",
+      "bands_kda": [250, 150, 100, 75, 50, 37, 25, 20, 15, 10],
+      "reference_kda": [75, 25],
+      "reference_cue": "color_pink"
+    },
+    {
+      "id": "all-blue",
+      "name": "Precision Plus Protein All Blue (Bio-Rad 1610373)",
+      "bands_kda": [250, 150, 100, 75, 50, 37, 25, 20, 15, 10],
+      "reference_kda": [75, 50, 25],
+      "reference_cue": "intensity"
+    }
+  ]
+}
